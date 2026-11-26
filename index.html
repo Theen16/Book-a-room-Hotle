@@ -182,8 +182,22 @@
         .badge.unpaid { background-color: #fef3c7; color: #d97706; }
         .action-btns {
             display: flex;
-            gap: 8px;
+            flex-direction: column;
+            gap: 4px;
         }
+        .action-row {
+            display: flex;
+            gap: 6px;
+        }
+        .share-line-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #06c755;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .share-line-btn:hover { text-decoration: underline; }
         .edit-btn {
             background: none;
             border: none;
@@ -368,7 +382,6 @@
 <script>
     let bookings = [];
 
-    // โหลดข้อมูลจาก LocalStorage เมื่อเปิดเว็บ
     function loadBookings() {
         const savedData = localStorage.getItem('phuwiang_bookings');
         if (savedData) {
@@ -380,7 +393,6 @@
         }
     }
 
-    // บันทึกข้อมูลลง LocalStorage ทุกครั้งที่มีการเปลี่ยนแปลง
     function saveBookings() {
         localStorage.setItem('phuwiang_bookings', JSON.stringify(bookings));
     }
@@ -484,6 +496,32 @@
         } else {
             return `${inDay} ${inMonth} ${inYear} ถึง ${outDay} ${outMonth} ${outYear}`;
         }
+    }
+
+    // ฟังก์ชันแชร์ข้อมูลตรงไปที่แอปพลิเคชัน Line
+    function shareToLine(id) {
+        const b = bookings.find(item => item.id === id);
+        if (!b) return;
+
+        const dateRangeText = formatBookingRange(new Date(b.checkIn), new Date(b.checkOut));
+        const text = `🏨 *แจ้งรายการจองห้องพัก ภูเวียงแกรนด์โฮเต็ล*\n` +
+                     `-----------------------------------\n` +
+                     `📅 ช่วงวันที่: ${dateRangeText} (${b.stayDays} คืน)\n` +
+                     `🚪 หมายเลขห้อง: ${b.roomNumber}\n` +
+                     `👤 ผู้จอง: ${b.name}\n` +
+                     `📞 เบอร์โทร: ${b.phone || 'ไม่ได้ระบุ'}\n` +
+                     `💚 ไลน์: ${b.lineId || 'ไม่ได้ระบุ'}\n` +
+                     `🛏️ ประเภทห้อง: เดี่ยว ${b.singleBed} / คู่ ${b.doubleBed}\n` +
+                     `💰 มัดจำ: ฿${b.deposit.toLocaleString()} | ค้างชำระ: ฿${b.balance.toLocaleString()}\n` +
+                     `📌 สถานะชำระ: ${b.paymentStatus}\n` +
+                     `📝 หมายเหตุ: ${b.note}\n` +
+                     `-----------------------------------`;
+
+        // ลิงก์สำหรับเปิดแชร์ไปที่ Line โดยตรง
+        const lineUrl = `https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(text)}`;
+        
+        // เปิดหน้าต่างแชร์ของ Line
+        window.open(lineUrl, '_blank');
     }
 
     const bookingForm = document.getElementById('bookingForm');
@@ -647,8 +685,13 @@
                 <td><small>${b.note}</small></td>
                 <td>
                     <div class="action-btns">
-                        <button class="edit-btn" onclick="editBooking(${b.id})">แก้ไข</button>
-                        <button class="delete-btn" onclick="deleteBooking(${b.id})">ลบ</button>
+                        <div class="action-row">
+                            <button class="share-line-btn" onclick="shareToLine(${b.id})">💚 แชร์ Line</button>
+                            <button class="edit-btn" onclick="editBooking(${b.id})">แก้ไข</button>
+                        </div>
+                        <div class="action-row">
+                            <button class="delete-btn" onclick="deleteBooking(${b.id})">ลบ</button>
+                        </div>
                     </div>
                 </td>
             `;
@@ -667,7 +710,6 @@
         }
     }
 
-    // โหลดข้อมูลและแสดงผลเมื่อเปิดเว็บ
     loadBookings();
     initDateSelects();
     renderTable();
